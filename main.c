@@ -49,8 +49,8 @@ Directory *create_Directory (Directory *currentDir, char *name) {
 Directory *search_Directory (Directory *currentDir, char *name) {
     int i;
     for(int i = 0; i < currentDir->subDirCount; i++){
-        if(strcmp(currentDir->subDir[i], name) == 0) {
-            currentDir = currentDir->subDir[i];
+        if(strcmp(currentDir->subDir[i]->name, name) == 0) {
+            return currentDir->subDir[i];
         }
     }
     return NULL;
@@ -74,7 +74,9 @@ void create_files(Directory *current, char *name) {
         printf("File already exist.\n");
         return;
     }
-    // TODO
+    
+    strcpy(current->files[current->fileCount].fileName, name);
+    current->fileCount++;
 }
 
 
@@ -121,9 +123,14 @@ Directory* cdcmd(Directory *current, char *name) {
 }
 
 // This function looks at the position of a file in the array of files.
-// It returns -1 if file already exist.
+// Return index if file exist, otherwise -1
 int search_index(Directory *current, char *name) {
-    // TODO
+    for(int i = 0; i < current->fileCount; i++) {
+        if(strcmp(current->files[i].fileName, name) == 0) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 int main(void) {
@@ -134,7 +141,7 @@ int main(void) {
     char argument[MAX_NAME];
 
     printf("Simple File Management System\n");
-    printf("Commands: cd, search, ls, exit, \n\n");
+    printf("Commands: cd, ls, search, create, close, open, exit, \n\n");
     printf("-----------*---*---*---------\n");
 
     while (1) {
@@ -150,7 +157,6 @@ int main(void) {
             scanf("%s", argument);
             currentWorkingDir = cdcmd(currentWorkingDir, argument);
         } 
-        
         else if (strcmp(command, "search") == 0) {
             scanf("%s", argument);
             printf("Searching for '%s' starting from %s...\n", argument, currentWorkingDir->name);
@@ -163,11 +169,29 @@ int main(void) {
             for(int i = 0; i < currentWorkingDir->fileCount; i++)
                 printf(" [FILE] %s\n", currentWorkingDir->files[i].fileName);
         }
-
+        else if (strcmp(command, "create") == 0) {
+            scanf("%s", argument);
+            create_files(currentWorkingDir, argument);
+            printf("File is created successfuly.\n");
+        }
+        else if (strcmp(command, "close") == 0) {
+            scanf("%s", argument);
+            close_files(currentWorkingDir, argument);
+            printf("Closing file.\n");
+        }
+        else if (strcmp(command, "open") == 0) {
+            scanf("%s", argument);
+            open_files(currentWorkingDir, argument);
+            printf("File is opened.\n");
+        }
         else {
             printf("Unknown command: %s\n", command);
         }
     }
+
+    // createDirectory use malloc to allocated new memory
+    // we need to free that memory when not use.
+    //freeDirectory(root); 
 
     return 0;
 }
