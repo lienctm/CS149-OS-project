@@ -28,8 +28,6 @@ typedef struct {
     File files[MAX_FILES];
     int subDirCount;
     int fileCount;
-
-
 } Directory;
 
 Directory *create_Directory (Directory *currentDir, char *name) {
@@ -64,14 +62,6 @@ void close_files(Directory *current, char *name);
 void search_files(Directory *current, char *name);
 int search_index(Directory *current, char *name);
 
-int main(void) {
-
-    printf("Simple File Management System\n");
-    printf("-----------*---*---*---------\n");
-
-
-    return 0;
-}
 
 
 void create_files(Directory *current, char *name) {
@@ -98,12 +88,86 @@ void close_files(Directory *current, char *name) {
 
 }
 
-void search_files(Directory *current, char *name){
+void search_files(Directory *current, char *name) {
+    int index = search_index(current, name);
+    if (index != -1) {
+        printf("Found: %s/%s\n", current->name, current->files[index].fileName);
+    }
 
+    for (int i = 0; i < current->subDirCount; i++) {
+        search_files(current->subDir[i], name);
+    }
+}
+
+Directory* cdcmd(Directory *current, char *name) {
+    if (strcmp(name, "...") == 0) {
+        if (current->currentDir != NULL) {
+            printf("Moving to parent directory: %s\n", current->currentDir->name);
+            return current->currentDir;
+        } else {
+            printf("Already at root.\n");
+            return current;
+        }
+    }
+
+    Directory *dir = search_Directory(current, name);
+    if (dir != NULL) {
+        printf("Changing to: %s\n", dir->name);
+        return dir;
+    } else {
+        printf("Directory '%s' not found.\n", name);
+        return current;
+    }
 }
 
 // This function looks at the position of a file in the array of files.
 // It returns -1 if file already exist.
 int search_index(Directory *current, char *name) {
     // TODO
+}
+
+int main(void) {
+    Directory *root = create_Directory(NULL, "root");
+    Directory *currentWorkingDir = root;
+
+    char command[20];
+    char argument[MAX_NAME];
+
+    printf("Simple File Management System\n");
+    printf("Commands: cd, search, ls, exit, \n\n");
+    printf("-----------*---*---*---------\n");
+
+    while (1) {
+        printf("%s> ", currentWorkingDir->name);
+        
+        if (scanf("%s", command) == EOF) break;
+
+
+        if (strcmp(command, "exit") == 0) {
+            printf("Shutting down...\n");
+            break;
+        } else if (strcmp(command, "cd") == 0) {
+            scanf("%s", argument);
+            currentWorkingDir = cdcmd(currentWorkingDir, argument);
+        } 
+        
+        else if (strcmp(command, "search") == 0) {
+            scanf("%s", argument);
+            printf("Searching for '%s' starting from %s...\n", argument, currentWorkingDir->name);
+            search_files(currentWorkingDir, argument);
+        } 
+        else if (strcmp(command, "ls") == 0) {
+            printf("Contents of %s:\n", currentWorkingDir->name);
+            for(int i = 0; i < currentWorkingDir->subDirCount; i++)
+                printf(" [DIR] %s\n", currentWorkingDir->subDir[i]->name);
+            for(int i = 0; i < currentWorkingDir->fileCount; i++)
+                printf(" [FILE] %s\n", currentWorkingDir->files[i].fileName);
+        }
+
+        else {
+            printf("Unknown command: %s\n", command);
+        }
+    }
+
+    return 0;
 }
