@@ -15,13 +15,14 @@
 #define MAX_FILES 20
 #define MAX_DIRS 10
 
-typedef struct{
+typedef struct Directory Directory;
+
+typedef struct File {
     char fileName[MAX_NAME];
     char contents[MAX_CONTENTS];
 } File;
 
-
-typedef struct {
+typedef struct Directory {
     char name[MAX_NAME];
     struct Directory *currentDir;
     struct Directory *subDir[MAX_DIRS];
@@ -29,6 +30,16 @@ typedef struct {
     int subDirCount;
     int fileCount;
 } Directory;
+
+Directory *create_Directory(Directory *currentDir, char *name);
+Directory *search_Directory(Directory *currentDir, char *name);
+int search_index(Directory *current, char *name);
+void create_files(Directory *current, char *name);
+void open_files(Directory *current, char *name);
+void close_files(Directory *current, char *name);
+void search_files(Directory *current, char *name);
+void free_Directory(Directory *dir);
+Directory* cdcmd(Directory *current, char *name);
 
 Directory *create_Directory (Directory *currentDir, char *name) {
     // allocating a new memory for new directory
@@ -38,16 +49,15 @@ Directory *create_Directory (Directory *currentDir, char *name) {
         exit(1);
     }
     // initialise directory members
+    
+    strcpy(dir->name, name);
     dir->currentDir = currentDir;
-    strcpy(dir->subDir, name);
     dir->subDirCount = 0;
     dir->fileCount = 0;
-
     return dir;
 }
 
 Directory *search_Directory (Directory *currentDir, char *name) {
-    int i;
     for(int i = 0; i < currentDir->subDirCount; i++){
         if(strcmp(currentDir->subDir[i]->name, name) == 0) {
             return currentDir->subDir[i];
@@ -55,13 +65,6 @@ Directory *search_Directory (Directory *currentDir, char *name) {
     }
     return NULL;
 }
-
-void create_files(Directory *current, char *name);
-void open_files(Directory *current, char *name);
-void close_files(Directory *current, char *name);
-void search_files(Directory *current, char *name);
-int search_index(Directory *current, char *name);
-
 
 
 void create_files(Directory *current, char *name) {
@@ -91,20 +94,24 @@ void close_files(Directory *current, char *name) {
 }
 
 void search_files(Directory *current, char *name) {
+    if (current == NULL) return;
+
     int index = search_index(current, name);
     if (index != -1) {
         printf("Found: %s/%s\n", current->name, current->files[index].fileName);
     }
 
     for (int i = 0; i < current->subDirCount; i++) {
-        search_files(current->subDir[i], name);
+        if (current->subDir[i] != NULL) {
+            search_files(current->subDir[i], name);
+        }
     }
 }
-
 Directory* cdcmd(Directory *current, char *name) {
-    if (strcmp(name, "...") == 0) {
+    // Standard notation for parent is ".."
+    if (strcmp(name, "..") == 0) {
         if (current->currentDir != NULL) {
-            printf("Moving to parent directory: %s\n", current->currentDir->name);
+            printf("Moving up to: %s\n", current->currentDir->name);
             return current->currentDir;
         } else {
             printf("Already at root.\n");
@@ -112,9 +119,9 @@ Directory* cdcmd(Directory *current, char *name) {
         }
     }
 
+    // Move into a subdirectory
     Directory *dir = search_Directory(current, name);
     if (dir != NULL) {
-        printf("Changing to: %s\n", dir->name);
         return dir;
     } else {
         printf("Directory '%s' not found.\n", name);
@@ -132,6 +139,17 @@ int search_index(Directory *current, char *name) {
     }
     return -1;
 }
+void free_Directory(Directory *dir) {
+    if (dir == NULL) return;
+
+    // First, free all subdirectories recursively
+    for (int i = 0; i < dir->subDirCount; i++) {
+        free_Directory(dir->subDir[i]);
+    }
+
+    // After children are gone, free this directory
+    free(dir);
+}
 
 int main(void) {
     Directory *root = create_Directory(NULL, "root");
@@ -141,13 +159,13 @@ int main(void) {
     char argument[MAX_NAME];
 
     printf("Simple File Management System\n");
-    printf("Commands: cd, ls, search, create, close, open, exit, \n\n");
+    printf("Commands: cd, ls, search, create, close, open, exit, mkdir\n\n");
     printf("-----------*---*---*---------\n");
 
     while (1) {
         printf("%s> ", currentWorkingDir->name);
         
-        if (scanf("%s", command) == EOF) break;
+        if (scanf(" %s", command) == EOF) break;
 
 
         if (strcmp(command, "exit") == 0) {
@@ -165,7 +183,7 @@ int main(void) {
         else if (strcmp(command, "ls") == 0) {
             printf("Contents of %s:\n", currentWorkingDir->name);
             for(int i = 0; i < currentWorkingDir->subDirCount; i++)
-                printf(" [DIR] %s\n", currentWorkingDir->subDir[i]->name);
+                printf(" exit[DIR] %s\n", currentWorkingDir->subDir[i]->name);
             for(int i = 0; i < currentWorkingDir->fileCount; i++)
                 printf(" [FILE] %s\n", currentWorkingDir->files[i].fileName);
         }
@@ -184,7 +202,16 @@ int main(void) {
             open_files(currentWorkingDir, argument);
             printf("File is opened.\n");
         }
-        else {
+        else if (strcmp(command, "mkdir") == 0) {
+            scanf("%s", argument);
+            if (currentWorkingDir->subDirCount < MAX_DIRS) {
+                currentWorkingDir->subDir[currentWorkingDir->subDirCount] = create_Directory(currentWorkingDir, argument);
+                currentWorkingDir->subDirCount++;
+                printf("Directory created.\n");
+            } else {
+                printf("Directory limit reached.\n");
+            }
+        }else {
             printf("Unknown command: %s\n", command);
         }
     }
