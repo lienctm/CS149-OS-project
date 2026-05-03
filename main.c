@@ -15,12 +15,25 @@
 #define MAX_FILES 20
 #define MAX_DIRS 10
 
+#include <fcntl.h>     // open(), O_RDONLY, O_WRONLY, O_CREAT, O_TRUNC
+#include <unistd.h>    // close()
+#include <stdio.h>     // perror()
+#include <stdlib.h>    // exit()
+
+
 typedef struct Directory Directory;
 
 typedef struct File {
     char fileName[MAX_NAME];
     char contents[MAX_CONTENTS];
 } File;
+
+typedef struct {
+    int inFd;
+    int outFd;
+    char *inputFile;
+    char *outputFile;
+} FileHandles;
 
 typedef struct Directory {
     char name[MAX_NAME];
@@ -83,14 +96,22 @@ void create_files(Directory *current, char *name) {
 }
 
 
-void open_files(Directory *current, char *name){
-    // TODO
-    // check if file exits
-
+void open_files(Directory *current, char *name) {
+    int index = search_index(current, name);
+    if (index == -1) {
+        printf("File not found.\n");
+        return;
+    }
+    printf("Opening virtual file: %s\n", name);
 }
 
 void close_files(Directory *current, char *name) {
-
+    int index = search_index(current, name);
+    if (index == -1) {
+        printf("File not found.\n");
+        return;
+    }
+    printf("Closing virtual file: %s\n", name);
 }
 
 void search_files(Directory *current, char *name) {
