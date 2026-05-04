@@ -8,6 +8,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<stdbool.h>
 
 
 #define MAX_NAME 30
@@ -26,6 +27,7 @@ typedef struct Directory Directory;
 typedef struct File {
     char fileName[MAX_NAME];
     char contents[MAX_CONTENTS];
+    bool isOpen;
 } File;
 
 typedef struct {
@@ -41,7 +43,7 @@ typedef struct Directory {
     struct Directory *subDir[MAX_DIRS];
     File files[MAX_FILES];
     int subDirCount;
-    int fileCount;
+    int fileCount;  
 } Directory;
 
 Directory *create_Directory(Directory *currentDir, char *name);
@@ -93,15 +95,17 @@ void create_files(Directory *current, char *name) {
     
     strcpy(current->files[current->fileCount].fileName, name);
     current->fileCount++;
+    printf("File is created successfully.\n");
 }
 
 
 void open_files(Directory *current, char *name) {
     int index = search_index(current, name);
     if (index == -1) {
-        printf("File not found.\n");
+        printf("Error: File not found.\n");
         return;
     }
+    current->files[index].isOpen = true;
     printf("Opening virtual file: %s\n", name);
 }
 
@@ -111,7 +115,11 @@ void close_files(Directory *current, char *name) {
         printf("File not found.\n");
         return;
     }
-    printf("Closing virtual file: %s\n", name);
+    if(current->files[index].isOpen == false) {
+        printf("Error: The file has not opened yet.\n");
+    } else {
+        printf("Closing virtual file: %s\n", name);
+    }
 }
 
 void search_files(Directory *current, char *name) {
@@ -120,6 +128,11 @@ void search_files(Directory *current, char *name) {
     int index = search_index(current, name);
     if (index != -1) {
         printf("Found: %s/%s\n", current->name, current->files[index].fileName);
+        
+    }
+    else {
+        printf("Find not found.\n");
+        return;
     }
 
     for (int i = 0; i < current->subDirCount; i++) {
@@ -127,6 +140,7 @@ void search_files(Directory *current, char *name) {
             search_files(current->subDir[i], name);
         }
     }
+   
 }
 Directory* cdcmd(Directory *current, char *name) {
     // Standard notation for parent is ".."
@@ -211,17 +225,14 @@ int main(void) {
         else if (strcmp(command, "create") == 0) {
             scanf("%s", argument);
             create_files(currentWorkingDir, argument);
-            printf("File is created successfuly.\n");
         }
         else if (strcmp(command, "close") == 0) {
             scanf("%s", argument);
             close_files(currentWorkingDir, argument);
-            printf("Closing file.\n");
         }
         else if (strcmp(command, "open") == 0) {
             scanf("%s", argument);
             open_files(currentWorkingDir, argument);
-            printf("File is opened.\n");
         }
         else if (strcmp(command, "mkdir") == 0) {
             scanf("%s", argument);
@@ -239,7 +250,7 @@ int main(void) {
 
     // createDirectory use malloc to allocated new memory
     // we need to free that memory when not use.
-    //freeDirectory(root); 
+    free_Directory(root); 
 
     return 0;
 }
