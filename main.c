@@ -1,7 +1,7 @@
 /**
  * CS149-Operating System
  * Project: File management
- * Author:
+ * Author: Lien Cao, Brennan Luong, Evan Taber
  * Date: May 2026
  */
 
@@ -30,13 +30,6 @@ typedef struct File {
     bool isOpen;
 } File;
 
-typedef struct {
-    int inFd;
-    int outFd;
-    char *inputFile;
-    char *outputFile;
-} FileHandles;
-
 typedef struct Directory {
     char name[MAX_NAME];
     struct Directory *currentDir;
@@ -54,6 +47,8 @@ void open_files(Directory *current, char *name);
 void close_files(Directory *current, char *name);
 void search_files(Directory *current, char *name);
 void free_Directory(Directory *dir);
+void write_to_file(Directory *current, char *name); // Added 5/7
+void read_from_files(Directory * current, char *name); // Added 5/7 
 Directory* cdcmd(Directory *current, char *name);
 
 Directory *create_Directory (Directory *currentDir, char *name) {
@@ -64,7 +59,6 @@ Directory *create_Directory (Directory *currentDir, char *name) {
         exit(1);
     }
     // initialise directory members
-    
     strcpy(dir->name, name);
     dir->currentDir = currentDir;
     dir->subDirCount = 0;
@@ -98,6 +92,51 @@ void create_files(Directory *current, char *name) {
     printf("File is created successfully.\n");
 }
 
+void write_to_file(Directory *current, char *name) {
+    // check if file exist or open for write
+    int index = search_index(current, name);
+    if (index == -1) {
+        printf("Error: File not found.\n");
+        return;
+    }
+    if(current->files[index].isOpen == false) {
+        printf("Error opening file for writing\n");
+        return;
+    }
+    // start writing
+    char buf[1000];
+    printf("Enter text to write into file. Type EOF to stop.\n");
+    while(1) {
+        fgets(buf, sizeof(buf), stdin);
+        if(strncmp(buf, "EOF", 3) == 0) {
+            break;
+        }
+        strcat(current->files[index].contents, buf);
+    }
+
+    printf("File written successfully\n");
+    
+}
+
+void read_from_file(Directory *current, char *name) {
+    int index = search_index(current, name);
+    if (index == -1) {
+        printf("Error: File not found.\n");
+        return;
+    }
+    if(current->files[index].isOpen == false) {
+        printf("Error opening file for reading\n");
+        return;
+    }
+    // start reading
+    if (strlen(current->files[index].contents) == 0) {
+        printf("File is empty.\n");
+        return;
+    }
+
+    printf("File contents:\n");
+    printf("%s", current->files[index].contents);
+}
 
 void open_files(Directory *current, char *name) {
     int index = search_index(current, name);
@@ -194,7 +233,7 @@ int main(void) {
     char argument[MAX_NAME];
 
     printf("Simple File Management System\n");
-    printf("Commands: cd, ls, search, create, close, open, exit, mkdir\n\n");
+    printf("Commands: cd, ls, search, create, write, read, close, open, exit, mkdir\n\n");
     printf("-----------*---*---*---------\n");
 
     while (1) {
@@ -206,7 +245,8 @@ int main(void) {
         if (strcmp(command, "exit") == 0) {
             printf("Shutting down...\n");
             break;
-        } else if (strcmp(command, "cd") == 0) {
+        } 
+        else if (strcmp(command, "cd") == 0) {
             scanf("%s", argument);
             currentWorkingDir = cdcmd(currentWorkingDir, argument);
         } 
@@ -243,7 +283,16 @@ int main(void) {
             } else {
                 printf("Directory limit reached.\n");
             }
-        }else {
+        }
+        else if(strcmp(command, "write") == 0) {
+            scanf("%s", argument);
+            write_to_file(currentWorkingDir, argument);
+        }
+        else if (strcmp(command, "read") == 0) {
+            scanf("%s", argument);
+            read_from_file(currentWorkingDir, argument);
+        }
+        else {
             printf("Unknown command: %s\n", command);
         }
     }
