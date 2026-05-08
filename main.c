@@ -234,6 +234,7 @@ int main(void) {
 
     printf("Simple File Management System\n");
     printf("Commands: cd, ls, search, create, write, read, close, open, exit, mkdir\n\n");
+    printf("Enter 'cd ..' to come back to the parent directory\n");
     printf("-----------*---*---*---------\n");
 
     while (1) {
